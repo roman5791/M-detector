@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
@@ -8,7 +8,6 @@ Launches the dynfilter node with odometry support
 
 import roslaunch
 import rospy
-import sys
 import os
 
 def main():

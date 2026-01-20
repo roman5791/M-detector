@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
@@ -8,7 +8,6 @@ Launches the cal_recall node to calculate IoU and recall metrics
 
 import roslaunch
 import rospy
-import sys
 
 def main():
     # Initialize roslaunch

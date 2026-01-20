@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
@@ -8,7 +8,6 @@ Launches the display_prediction node to visualize prediction results
 
 import roslaunch
 import rospy
-import sys
 import os
 
 def main():
