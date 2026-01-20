@@ -1,0 +1,42 @@
+# Build directories
+build/
+install/
+log/
+devel/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.cmake
+Makefile
+
+# Compiled files
+*.o
+*.so
+*.a
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ROS2 specific
+*.egg-info/
+local_setup.*
+setup.*
+_local_setup_util.py
+
+# Temporary files
+/tmp/
+*.tmp
+*.bak
+
+# Output files
+*.log
+*.pcd
+*.label
