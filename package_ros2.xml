@@ -10,12 +10,11 @@
         Moving Event Detection from LiDAR Point Streams.
   </description>
 
-  <maintainer email="wu2020@connect.hku.hk">HuajieWu</maintainer>
+  <maintainer email="rimmhomeem@gmail.com">RHalunko</maintainer>
   
   <license>GNUv2</license>
 
-  <author email="wu2020@connect.hku.hk">HuajieWu</author>
-  <author email="yhangli@connect.hku.hk">YihangLi</author>
+  <author email="rimmhomeem@gmail.com">RHalunko</author>
   
   <buildtool_depend>ament_cmake</buildtool_depend>
   
