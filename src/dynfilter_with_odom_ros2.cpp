@@ -246,31 +246,78 @@ private:
 
     void PublishDyn(const double& scan_end_time)
     {
-        // Publish dynamic objects (point-out)
-        if(DynObjFilt->laserCloudDynObj->size() > 0)
+        // Log dynamic object detection (matching original behavior)
+        if(DynObjFilt->cluster_coupled)
+        {
+            RCLCPP_INFO(this->get_logger(), "Found Dynamic Objects, numbers: %zu", 
+                        DynObjFilt->laserCloudDynObj_clus->points.size());
+        }
+        else
+        {
+            RCLCPP_INFO(this->get_logger(), "Found Dynamic Objects, numbers: %zu", 
+                        DynObjFilt->laserCloudDynObj->points.size());
+        }
+        
+        // Reset case counters (matching original)
+        DynObjFilt->case1_num = 0;
+        DynObjFilt->case2_num = 0;
+        DynObjFilt->case3_num = 0;
+        
+        // Publish dynamic objects in world frame (point-out mode)
+        if(DynObjFilt->laserCloudDynObj_world->size() > 0)
         {
             sensor_msgs::msg::PointCloud2 laserCloudmsg;
-            pcl::toROSMsg(*DynObjFilt->laserCloudDynObj, laserCloudmsg);
+            pcl::toROSMsg(*DynObjFilt->laserCloudDynObj_world, laserCloudmsg);
             laserCloudmsg.header.stamp = rclcpp::Time(static_cast<int64_t>(scan_end_time * 1e9));
             laserCloudmsg.header.frame_id = DynObjFilt->frame_id;
             pub_pcl_dyn->publish(laserCloudmsg);
         }
         
-        // Publish dynamic objects (frame-out)
-        if(DynObjFilt->laserCloudDynObj_clus->size() > 0)
+        // Publish dynamic objects (frame-out mode) if clustering is enabled
+        if(DynObjFilt->cluster_coupled || DynObjFilt->cluster_future)
         {
-            sensor_msgs::msg::PointCloud2 laserCloudmsg;
-            pcl::toROSMsg(*DynObjFilt->laserCloudDynObj_clus, laserCloudmsg);
-            laserCloudmsg.header.stamp = rclcpp::Time(static_cast<int64_t>(scan_end_time * 1e9));
-            laserCloudmsg.header.frame_id = DynObjFilt->frame_id;
-            pub_pcl_dyn_extend->publish(laserCloudmsg);
+            if(DynObjFilt->laserCloudDynObj_clus->size() > 0)
+            {
+                sensor_msgs::msg::PointCloud2 laserCloudmsg;
+                pcl::toROSMsg(*DynObjFilt->laserCloudDynObj_clus, laserCloudmsg);
+                laserCloudmsg.header.stamp = rclcpp::Time(static_cast<int64_t>(scan_end_time * 1e9));
+                laserCloudmsg.header.frame_id = DynObjFilt->frame_id;
+                pub_pcl_dyn_extend->publish(laserCloudmsg);
+            }
         }
         
-        // Publish static/steady points
-        if(DynObjFilt->laserCloudSteadObj->size() > 0)
+        // Publish static/steady points (matching original accumulation logic)
+        PointCloudXYZI::Ptr laserCloudSteadObj_pub(new PointCloudXYZI);
+        if(DynObjFilt->cluster_coupled)
+        {
+            if(DynObjFilt->laserCloudSteadObj_accu_times < DynObjFilt->laserCloudSteadObj_accu_limit)
+            {
+                DynObjFilt->laserCloudSteadObj_accu_times++;
+                DynObjFilt->laserCloudSteadObj_accu.push_back(DynObjFilt->laserCloudSteadObj_clus);
+                for(size_t i = 0; i < DynObjFilt->laserCloudSteadObj_accu.size(); i++)
+                {
+                    *laserCloudSteadObj_pub += *DynObjFilt->laserCloudSteadObj_accu[i];
+                }
+            }
+            else
+            {
+                DynObjFilt->laserCloudSteadObj_accu.pop_front();
+                DynObjFilt->laserCloudSteadObj_accu.push_back(DynObjFilt->laserCloudSteadObj_clus);
+                for(size_t i = 0; i < DynObjFilt->laserCloudSteadObj_accu.size(); i++)
+                {
+                    *laserCloudSteadObj_pub += *DynObjFilt->laserCloudSteadObj_accu[i];
+                }
+            }
+        }
+        else
+        {
+            *laserCloudSteadObj_pub = *DynObjFilt->laserCloudSteadObj;
+        }
+        
+        if(laserCloudSteadObj_pub->size() > 0)
         {
             sensor_msgs::msg::PointCloud2 laserCloudmsg;
-            pcl::toROSMsg(*DynObjFilt->laserCloudSteadObj, laserCloudmsg);
+            pcl::toROSMsg(*laserCloudSteadObj_pub, laserCloudmsg);
             laserCloudmsg.header.stamp = rclcpp::Time(static_cast<int64_t>(scan_end_time * 1e9));
             laserCloudmsg.header.frame_id = DynObjFilt->frame_id;
             pub_pcl_std->publish(laserCloudmsg);
