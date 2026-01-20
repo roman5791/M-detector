@@ -83,10 +83,45 @@ private:
         // Since the original init() expects a ros::NodeHandle, we need to manually set parameters
         // This is a simplified version - you may need to add more parameters based on your needs
         
-        // For now, we'll skip the init and let the filter use default values
-        // In a full migration, you'd need to update DynObjFilter class to support ROS2
+        // TODO: Full ROS2 integration requires one of the following approaches:
+        // 1. Update DynObjFilter::init() to accept parameters directly (not ros::NodeHandle)
+        // 2. Make DynObjFilter template-based to support both ROS1 and ROS2
+        // 3. Create a fully ROS2-native DynObjFilter class
+        
+        // For now, we declare the parameters but cannot pass them to DynObjFilter::init()
+        // because it requires a ros::NodeHandle which doesn't exist in ROS2
+        
+        double buffer_delay = node_->declare_parameter("dyn_obj.buffer_delay", 0.1);
+        int buffer_size = node_->declare_parameter("dyn_obj.buffer_size", 300000);
+        int points_num_perframe = node_->declare_parameter("dyn_obj.points_num_perframe", 150000);
+        double depth_map_dur = node_->declare_parameter("dyn_obj.depth_map_dur", 0.2);
+        int max_depth_map_num = node_->declare_parameter("dyn_obj.max_depth_map_num", 5);
+        int max_pixel_points = node_->declare_parameter("dyn_obj.max_pixel_points", 50);
+        double frame_dur = node_->declare_parameter("dyn_obj.frame_dur", 0.1);
+        int dataset = node_->declare_parameter("dyn_obj.dataset", 0);
+        float self_x_f = node_->declare_parameter("dyn_obj.self_x_f", 0.15f);
+        float self_x_b = node_->declare_parameter("dyn_obj.self_x_b", 0.15f);
+        float self_y_l = node_->declare_parameter("dyn_obj.self_y_l", 0.15f);
+        float self_y_r = node_->declare_parameter("dyn_obj.self_y_r", 0.5f);
+        float blind_dis = node_->declare_parameter("dyn_obj.blind_dis", 0.15f);
+        float fov_up = node_->declare_parameter("dyn_obj.fov_up", 0.15f);
+        float fov_down = node_->declare_parameter("dyn_obj.fov_down", 0.15f);
+        float fov_cut = node_->declare_parameter("dyn_obj.fov_cut", 0.15f);
+        float fov_left = node_->declare_parameter("dyn_obj.fov_left", 180.0f);
+        float fov_right = node_->declare_parameter("dyn_obj.fov_right", -180.0f);
+        int checkneighbor_range = node_->declare_parameter("dyn_obj.checkneighbor_range", 1);
+        bool stop_object_detect = node_->declare_parameter("dyn_obj.stop_object_detect", false);
+        
+        // Additional parameters would be declared here based on DynObjFilter::init()
+        // For a complete migration, all parameters from the init() method should be ported
+        
         RCLCPP_WARN(this->get_logger(), 
-            "DynObjFilter initialized with default values. Full parameter migration needed.");
+            "DynObjFilter initialized with default internal values. "
+            "Parameters declared in ROS2 but not yet passed to filter core. "
+            "Full ROS2 integration requires refactoring DynObjFilter class.");
+        RCLCPP_INFO(this->get_logger(), 
+            "ROS2 Parameters loaded: buffer_delay=%.2f, buffer_size=%d, dataset=%d",
+            buffer_delay, buffer_size, dataset);
     }
 
     void odomCallback(const nav_msgs::msg::Odometry::SharedPtr cur_odom)

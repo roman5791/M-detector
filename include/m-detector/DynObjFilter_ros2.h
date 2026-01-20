@@ -7,6 +7,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <memory>
+#include <types.h>
 
 // Forward declaration
 class DynObjFilter;

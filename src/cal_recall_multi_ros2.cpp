@@ -43,7 +43,7 @@ void Init()
     objects_types_map_kitti[1] = "Truck";
     objects_types_map_kitti[2] = "Car";
     objects_types_map_kitti[3] = "Tram";
-    objects_types_map_kitti[4] = "Pedestrain";
+    objects_types_map_kitti[4] = "Pedestrian";
     objects_types_map_kitti[5] = "Cyclist";
     objects_types_map_kitti[6] = "Van";
 
