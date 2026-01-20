@@ -174,10 +174,22 @@ if(ament_cmake_FOUND)
     DESTINATION lib/${PROJECT_NAME}
   )
   
-  # Install directories if needed
-  install(DIRECTORY config launch rviz
-    DESTINATION share/${PROJECT_NAME}
-  )
+  # Install directories if they exist
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/config")
+    install(DIRECTORY config
+      DESTINATION share/${PROJECT_NAME}
+    )
+  endif()
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/launch")
+    install(DIRECTORY launch
+      DESTINATION share/${PROJECT_NAME}
+    )
+  endif()
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/rviz")
+    install(DIRECTORY rviz
+      DESTINATION share/${PROJECT_NAME}
+    )
+  endif()
   
   # ament_cmake specific finalization
   ament_package()

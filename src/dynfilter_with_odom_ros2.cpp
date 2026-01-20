@@ -87,29 +87,33 @@ private:
     void InitDynObjFilter()
     {
         // Initialize DynObjFilter parameters from ROS2 parameter server
-        // Since DynObjFilter::init expects ros::NodeHandle, we need to adapt
-        // For now, we'll initialize the parameters that DynObjFilter needs directly
+        // Since DynObjFilter::init expects ros::NodeHandle and we can't modify the original
+        // source files, we manually set all parameters directly on the DynObjFilter object
         
-        // Declare all DynObjFilter parameters with defaults
+        // Declare all DynObjFilter parameters with defaults matching the original ROS1 code
         this->declare_parameter<int>("dyn_obj.dataset", 0);
         this->declare_parameter<double>("dyn_obj.buffer_delay", 0.1);
-        this->declare_parameter<int>("dyn_obj.buffer_size", 100000);
-        this->declare_parameter<int>("dyn_obj.points_num_perframe", 30000);
+        this->declare_parameter<int>("dyn_obj.buffer_size", 300000);
+        this->declare_parameter<int>("dyn_obj.points_num_perframe", 150000);
         this->declare_parameter<double>("dyn_obj.depth_map_dur", 0.2);
         this->declare_parameter<int>("dyn_obj.max_depth_map_num", 5);
-        this->declare_parameter<int>("dyn_obj.max_pixel_points", 5);
+        this->declare_parameter<int>("dyn_obj.max_pixel_points", 50);
         this->declare_parameter<double>("dyn_obj.frame_dur", 0.1);
-        this->declare_parameter<double>("dyn_obj.hor_resolution_max", 0.005);
-        this->declare_parameter<double>("dyn_obj.ver_resolution_max", 0.01);
-        this->declare_parameter<double>("dyn_obj.fov_up", 52.0);
-        this->declare_parameter<double>("dyn_obj.fov_down", -7.0);
+        this->declare_parameter<double>("dyn_obj.hor_resolution_max", 0.0025);
+        this->declare_parameter<double>("dyn_obj.ver_resolution_max", 0.0025);
+        this->declare_parameter<double>("dyn_obj.fov_up", 0.15);
+        this->declare_parameter<double>("dyn_obj.fov_down", 0.15);
+        this->declare_parameter<double>("dyn_obj.fov_cut", 0.15);
         this->declare_parameter<double>("dyn_obj.fov_left", 180.0);
         this->declare_parameter<double>("dyn_obj.fov_right", -180.0);
+        this->declare_parameter<double>("dyn_obj.blind_dis", 0.15);
         this->declare_parameter<int>("dyn_obj.occluded_map_thr1", 3);
-        this->declare_parameter<double>("dyn_obj.map_cons_hor_thr1", 0.05);
-        this->declare_parameter<double>("dyn_obj.map_cons_ver_thr1", 0.05);
-        this->declare_parameter<bool>("dyn_obj.cluster_coupled", true);
-        this->declare_parameter<bool>("dyn_obj.cluster_future", true);
+        this->declare_parameter<double>("dyn_obj.map_cons_hor_thr1", 0.01);
+        this->declare_parameter<double>("dyn_obj.map_cons_ver_thr1", 0.01);
+        this->declare_parameter<bool>("dyn_obj.cluster_coupled", false);
+        this->declare_parameter<bool>("dyn_obj.cluster_future", false);
+        this->declare_parameter<bool>("dyn_obj.dyn_filter_en", true);
+        this->declare_parameter<std::string>("dyn_obj.frame_id", "camera_init");
         
         // Get parameters and set them in DynObjFilter
         DynObjFilt->dataset = this->get_parameter("dyn_obj.dataset").as_int();
@@ -124,22 +128,58 @@ private:
         DynObjFilt->ver_resolution_max = this->get_parameter("dyn_obj.ver_resolution_max").as_double();
         DynObjFilt->fov_up = this->get_parameter("dyn_obj.fov_up").as_double();
         DynObjFilt->fov_down = this->get_parameter("dyn_obj.fov_down").as_double();
+        DynObjFilt->fov_cut = this->get_parameter("dyn_obj.fov_cut").as_double();
         DynObjFilt->fov_left = this->get_parameter("dyn_obj.fov_left").as_double();
         DynObjFilt->fov_right = this->get_parameter("dyn_obj.fov_right").as_double();
+        DynObjFilt->blind_dis = this->get_parameter("dyn_obj.blind_dis").as_double();
         DynObjFilt->occluded_map_thr1 = this->get_parameter("dyn_obj.occluded_map_thr1").as_int();
         DynObjFilt->map_cons_hor_thr1 = this->get_parameter("dyn_obj.map_cons_hor_thr1").as_double();
         DynObjFilt->map_cons_ver_thr1 = this->get_parameter("dyn_obj.map_cons_ver_thr1").as_double();
         DynObjFilt->cluster_coupled = this->get_parameter("dyn_obj.cluster_coupled").as_bool();
         DynObjFilt->cluster_future = this->get_parameter("dyn_obj.cluster_future").as_bool();
+        DynObjFilt->dyn_filter_en = this->get_parameter("dyn_obj.dyn_filter_en").as_bool();
+        DynObjFilt->frame_id = this->get_parameter("dyn_obj.frame_id").as_string();
         
-        // Initialize other necessary components
+        // Initialize internal structures (similar to what init() does)
+        DynObjFilt->max_ind = floor(3.1415926 * 2 / DynObjFilt->hor_resolution_max);
+        
+        if (DynObjFilt->pcl_his_list.size() == 0)
+        {
+            PointCloudXYZI::Ptr first_frame(new PointCloudXYZI());
+            first_frame->reserve(400000);
+            DynObjFilt->pcl_his_list.push_back(first_frame);
+            DynObjFilt->laserCloudSteadObj_hist = PointCloudXYZI::Ptr(new PointCloudXYZI());
+            DynObjFilt->laserCloudSteadObj = PointCloudXYZI::Ptr(new PointCloudXYZI());
+            DynObjFilt->laserCloudDynObj = PointCloudXYZI::Ptr(new PointCloudXYZI());
+            DynObjFilt->laserCloudDynObj_world = PointCloudXYZI::Ptr(new PointCloudXYZI());
+            DynObjFilt->laserCloudDynObj_clus = PointCloudXYZI::Ptr(new PointCloudXYZI());
+            DynObjFilt->laserCloudSteadObj_clus = PointCloudXYZI::Ptr(new PointCloudXYZI());
+            
+            int xy_ind[2] = {-1, 1};
+            for (int ind_hor = 0; ind_hor < 2*DynObjFilt->hor_num + 1; ind_hor++)
+            {
+                for (int ind_ver = 0; ind_ver < 2*DynObjFilt->ver_num + 1; ind_ver++)
+                {
+                    DynObjFilt->pos_offset.push_back(((ind_hor)/2 + ind_hor%2)*xy_ind[ind_hor%2] * MAX_1D_HALF + 
+                                                      ((ind_ver)/2 + ind_ver%2)*xy_ind[ind_ver%2]);
+                }
+            }
+        }
+        
+        // Calculate derived parameters
+        DynObjFilt->map_cons_hor_num1 = ceil(DynObjFilt->map_cons_hor_thr1/DynObjFilt->hor_resolution_max);
+        DynObjFilt->map_cons_ver_num1 = ceil(DynObjFilt->map_cons_ver_thr1/DynObjFilt->ver_resolution_max);
+        
+        // Resize buffer
         DynObjFilt->buffer.resize(DynObjFilt->buffer_size);
-        DynObjFilt->laserCloudSteadObj.reset(new PointCloudXYZI());
-        DynObjFilt->laserCloudDynObj.reset(new PointCloudXYZI());
-        DynObjFilt->laserCloudDynObj_world.reset(new PointCloudXYZI());
-        DynObjFilt->laserCloudDynObj_clus.reset(new PointCloudXYZI());
-        DynObjFilt->laserCloudSteadObj_clus.reset(new PointCloudXYZI());
-        DynObjFilt->laserCloudSteadObj_hist.reset(new PointCloudXYZI());
+        
+        // Allocate point_soph pointers
+        DynObjFilt->max_pointers_num = DynObjFilt->buffer_size * 3;
+        DynObjFilt->point_soph_pointers.resize(DynObjFilt->max_pointers_num);
+        for(int i = 0; i < DynObjFilt->max_pointers_num; i++)
+        {
+            DynObjFilt->point_soph_pointers[i] = new point_soph();
+        }
     }
 
     void OdomCallback(const nav_msgs::msg::Odometry::SharedPtr cur_odom)
