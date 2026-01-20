@@ -175,9 +175,82 @@ Download the embedded version provided in Releases into a new workspace and comp
 
 The bags used in paper can be download at [[this link](https://drive.google.com/drive/folders/1ASNfrjZB7n9Q-nB4Pm2IwvArFWnTcFAj?usp=sharing)].
 
+## 8. ROS2 (Jazzy / Ubuntu 24.04) Support
 
+### 8.1 Building for ROS2
 
-## 8. License
+The package now supports ROS2 Jazzy with incremental migration of nodes. Currently available ROS2 nodes:
+- `dynfilter_odom` - Dynamic object filtering with odometry (converted from `dynfilter` ROS1 node)
+
+**Prerequisites:**
+- ROS2 Jazzy installed and sourced
+- All dependencies from section 2 (PCL, Eigen, TBB, OpenCV, Python)
+- ROS2 packages: `rclcpp`, `nav_msgs`, `sensor_msgs`, `pcl_ros`, `pcl_conversions`, `tf2`, `tf2_eigen`
+
+**Build steps:**
+```bash
+cd ~/ros2_ws/src
+git clone git@github.com:roman5791/M-detector.git
+cd ~/ros2_ws
+colcon build --packages-select m_detector
+source install/setup.bash
+```
+
+### 8.2 Running the dynfilter_odom Node
+
+Run the node with parameter configuration:
+```bash
+ros2 run m_detector dynfilter_odom --ros-args \
+  -p dyn_obj.points_topic:=/your_point_cloud_topic \
+  -p dyn_obj.odom_topic:=/aft_mapped_to_init \
+  -p dyn_obj.out_file:=/path/to/output/predictions/ \
+  -p dyn_obj.out_file_origin:=/path/to/output/predictions_origin/
+```
+
+**Key parameters:**
+- `dyn_obj.points_topic` - Input point cloud topic (sensor_msgs/PointCloud2)
+- `dyn_obj.odom_topic` - Odometry topic (nav_msgs/Odometry)
+- `dyn_obj.out_file` - Output path for frame-out results (optional)
+- `dyn_obj.out_file_origin` - Output path for point-out results (optional)
+- `dyn_obj.dataset` - Dataset type (0=KITTI, 1=NuScenes, 2=Waymo, 3=Avia)
+- `dyn_obj.depth_map_dur` - Effective duration of depth maps (default: 0.2)
+- `dyn_obj.buffer_delay` - Buffer delay duration (default: 0.1)
+- `dyn_obj.hor_resolution_max` - Horizontal resolution of depth map (default: 0.005)
+- `dyn_obj.ver_resolution_max` - Vertical resolution of depth map (default: 0.01)
+- `dyn_obj.cluster_coupled` - Enable frame-out results (default: false)
+- `dyn_obj.cluster_future` - Use frame-out during depth map construction (default: false)
+
+**Published topics:**
+- `/m_detector/point_out` - Dynamic objects in point-out mode (sensor_msgs/PointCloud2)
+- `/m_detector/frame_out` - Dynamic objects in frame-out mode (sensor_msgs/PointCloud2)
+- `/m_detector/std_points` - Static/steady points (sensor_msgs/PointCloud2)
+
+**Example with YAML config:**
+```bash
+# Create a config file: config_ros2.yaml
+ros2 run m_detector dynfilter_odom --ros-args --params-file config_ros2.yaml
+```
+
+### 8.3 Livox Driver Compatibility
+
+**Note:** The ROS2 version currently uses standard `sensor_msgs/PointCloud2` for point cloud input. If you need Livox custom message support:
+1. Install the ROS2 livox driver (if available for your ROS2 distribution)
+2. The code has provisions for livox support but currently defaults to PointCloud2
+
+### 8.4 Migration Status
+
+**Completed:**
+- ✅ dynfilter_odom node (ROS2)
+
+**Pending:**
+- display_prediction node (ROS2 conversion pending)
+- cal_recall node (ROS2 conversion pending)
+- Custom message/service files (if needed)
+- Integration testing with ROS2 SLAM systems
+
+For the latest migration status, check the `ros2/jazzy-migration` branch.
+
+## 9. License
 
 The source code of this package is released under [**GPLv2**](http://www.gnu.org/licenses/) license. We only allow it free for **academic usage**. For commercial use, please contact Dr. Fu Zhang [fuzhang@hku.hk](mailto:fuzhang@hku.hk).
 
