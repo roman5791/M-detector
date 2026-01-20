@@ -47,22 +47,46 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}   ${OpenMP_C_FLAGS}")
 find_package(PythonLibs REQUIRED)
 # find_path(MATPLOTLIB_CPP_INCLUDE_DIRS "matplotlibcpp.h")
 
-set(TBB_DIR "/usr/local/tbb-2019_U8")
-include("/home/huajie/package/oneTBB-2019_U8/cmake/TBBBuild.cmake")
-tbb_build(TBB_ROOT "/home/huajie/package/oneTBB-2019_U8" CONFIG_DIR TBB_DIR)
-find_package(catkin REQUIRED COMPONENTS
-  geometry_msgs
-  nav_msgs
-  sensor_msgs
-  roscpp
-  rospy
-  std_msgs
-  pcl_ros
-  tf
-  livox_ros_driver
-  message_generation
-  eigen_conversions
-)
+# Detect ROS1 vs ROS2
+find_package(catkin QUIET)
+find_package(ament_cmake QUIET)
+
+if(catkin_FOUND)
+  message(STATUS "Building for ROS1 with catkin")
+  set(TBB_DIR "/usr/local/tbb-2019_U8")
+  if(EXISTS "/home/huajie/package/oneTBB-2019_U8/cmake/TBBBuild.cmake")
+    include("/home/huajie/package/oneTBB-2019_U8/cmake/TBBBuild.cmake")
+    tbb_build(TBB_ROOT "/home/huajie/package/oneTBB-2019_U8" CONFIG_DIR TBB_DIR)
+  endif()
+  find_package(catkin REQUIRED COMPONENTS
+    geometry_msgs
+    nav_msgs
+    sensor_msgs
+    roscpp
+    rospy
+    std_msgs
+    pcl_ros
+    tf
+    livox_ros_driver
+    message_generation
+    eigen_conversions
+  )
+elseif(ament_cmake_FOUND)
+  message(STATUS "Building for ROS2 with ament_cmake")
+  find_package(rclcpp REQUIRED)
+  find_package(geometry_msgs REQUIRED)
+  find_package(nav_msgs REQUIRED)
+  find_package(sensor_msgs REQUIRED)
+  find_package(std_msgs REQUIRED)
+  find_package(pcl_ros REQUIRED)
+  find_package(tf2 REQUIRED)
+  find_package(tf2_eigen REQUIRED)
+  find_package(tf2_geometry_msgs REQUIRED)
+  find_package(visualization_msgs REQUIRED)
+  find_package(pcl_conversions REQUIRED)
+else()
+  message(FATAL_ERROR "Neither catkin nor ament_cmake found. Please source ROS1 or ROS2.")
+endif()
 
 find_package(Eigen3 REQUIRED)
 find_package(PCL 1.8 REQUIRED)
@@ -71,36 +95,76 @@ find_package(OpenCV REQUIRED)
 
 message(Eigen: ${EIGEN3_INCLUDE_DIR})
 
-include_directories(
-	${catkin_INCLUDE_DIRS} 
-  ${EIGEN3_INCLUDE_DIR}
-  ${PCL_INCLUDE_DIRS}
-  ${PYTHON_INCLUDE_DIRS}
-  include)
+if(catkin_FOUND)
+  include_directories(
+    ${catkin_INCLUDE_DIRS} 
+    ${EIGEN3_INCLUDE_DIR}
+    ${PCL_INCLUDE_DIRS}
+    ${PYTHON_INCLUDE_DIRS}
+    include)
+  
+  generate_messages(
+    DEPENDENCIES
+    geometry_msgs
+  )
+  
+  catkin_package(
+    CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs message_runtime
+    DEPENDS EIGEN3 PCL
+    INCLUDE_DIRS
+  )
+else()
+  # ROS2 - use ament_target_dependencies instead
+  include_directories(
+    ${EIGEN3_INCLUDE_DIR}
+    ${PCL_INCLUDE_DIRS}
+    ${PYTHON_INCLUDE_DIRS}
+    include)
+endif()
 
-generate_messages(
- DEPENDENCIES
- geometry_msgs
-)
 
-catkin_package(
-  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs message_runtime
-  DEPENDS EIGEN3 PCL
-  INCLUDE_DIRS
-)
-
-
-add_executable(dynfilter src/dynfilter_with_odom.cpp src/DynObjFilter.cpp src/DynObjCluster.cpp)
-target_link_libraries(dynfilter ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES} ${OpenCV_LIBS} TBB::tbb)
-target_include_directories(dynfilter PRIVATE ${PYTHON_INCLUDE_DIRS})
-
-add_executable(display_prediction src/display_prediction.cpp )
-target_link_libraries(display_prediction ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES} ${OpenCV_LIBS} TBB::tbb)
-target_include_directories(display_prediction PRIVATE ${PYTHON_INCLUDE_DIRS})
-
-
-add_executable(cal_recall src/cal_recall_multi.cpp)
-target_link_libraries(cal_recall ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES} ${OpenCV_LIBS} TBB::tbb)
-target_include_directories(cal_recall PRIVATE ${PYTHON_INCLUDE_DIRS})
+if(catkin_FOUND)
+  # ROS1 executables
+  add_executable(dynfilter src/dynfilter_with_odom.cpp src/DynObjFilter.cpp src/DynObjCluster.cpp)
+  target_link_libraries(dynfilter ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES} ${OpenCV_LIBS} TBB::tbb)
+  target_include_directories(dynfilter PRIVATE ${PYTHON_INCLUDE_DIRS})
+  
+  add_executable(display_prediction src/display_prediction.cpp )
+  target_link_libraries(display_prediction ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES} ${OpenCV_LIBS} TBB::tbb)
+  target_include_directories(display_prediction PRIVATE ${PYTHON_INCLUDE_DIRS})
+  
+  add_executable(cal_recall src/cal_recall_multi.cpp)
+  target_link_libraries(cal_recall ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES} ${OpenCV_LIBS} TBB::tbb)
+  target_include_directories(cal_recall PRIVATE ${PYTHON_INCLUDE_DIRS})
+elseif(ament_cmake_FOUND)
+  # ROS2 executables
+  
+  # dynfilter_odom node (ROS2)
+  add_executable(dynfilter_odom src/dynfilter_with_odom_ros2.cpp src/DynObjFilter.cpp src/DynObjCluster.cpp)
+  target_link_libraries(dynfilter_odom ${PCL_LIBRARIES} ${PYTHON_LIBRARIES} ${OpenCV_LIBS} TBB::tbb)
+  target_include_directories(dynfilter_odom PRIVATE ${PYTHON_INCLUDE_DIRS})
+  ament_target_dependencies(dynfilter_odom
+    rclcpp
+    geometry_msgs
+    nav_msgs
+    sensor_msgs
+    std_msgs
+    pcl_ros
+    pcl_conversions
+    tf2
+    tf2_eigen
+    tf2_geometry_msgs
+    visualization_msgs
+  )
+  
+  # Install executables
+  install(TARGETS
+    dynfilter_odom
+    DESTINATION lib/${PROJECT_NAME}
+  )
+  
+  # ament package
+  ament_package()
+endif()
 
 
