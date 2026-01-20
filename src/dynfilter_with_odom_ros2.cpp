@@ -29,6 +29,8 @@
 
 #include <deque>
 
+#define PI_MATH (3.14159f)
+
 using namespace std;
 
 class DynFilterOdomNode : public rclcpp::Node
@@ -170,16 +172,29 @@ private:
         DynObjFilt->map_cons_hor_num1 = ceil(DynObjFilt->map_cons_hor_thr1/DynObjFilt->hor_resolution_max);
         DynObjFilt->map_cons_ver_num1 = ceil(DynObjFilt->map_cons_ver_thr1/DynObjFilt->ver_resolution_max);
         
-        // Resize buffer
-        DynObjFilt->buffer.resize(DynObjFilt->buffer_size);
+        // Initialize buffer (use init() method, not resize())
+        DynObjFilt->buffer.init(DynObjFilt->buffer_size);
         
-        // Allocate point_soph pointers
-        DynObjFilt->max_pointers_num = DynObjFilt->buffer_size * 3;
-        DynObjFilt->point_soph_pointers.resize(DynObjFilt->max_pointers_num);
+        // Calculate FOV pixels
+        DynObjFilt->pixel_fov_up = floor((DynObjFilt->fov_up/180.0*PI_MATH + 0.5 * PI_MATH)/DynObjFilt->ver_resolution_max);
+        DynObjFilt->pixel_fov_down = floor((DynObjFilt->fov_down/180.0*PI_MATH + 0.5 * PI_MATH)/DynObjFilt->ver_resolution_max);
+        DynObjFilt->pixel_fov_cut = floor((DynObjFilt->fov_cut/180.0*PI_MATH + 0.5 * PI_MATH)/DynObjFilt->ver_resolution_max);
+        DynObjFilt->pixel_fov_left = floor((DynObjFilt->fov_left/180.0*PI_MATH + PI_MATH)/DynObjFilt->hor_resolution_max);
+        DynObjFilt->pixel_fov_right = floor((DynObjFilt->fov_right/180.0*PI_MATH + PI_MATH)/DynObjFilt->hor_resolution_max);
+        
+        // Allocate point_soph pointers (correct calculation based on temporal parameters)
+        DynObjFilt->max_pointers_num = round((DynObjFilt->max_depth_map_num * DynObjFilt->depth_map_dur + 
+                                               DynObjFilt->buffer_delay) / DynObjFilt->frame_dur) + 1;
+        DynObjFilt->point_soph_pointers.reserve(DynObjFilt->max_pointers_num);
         for(int i = 0; i < DynObjFilt->max_pointers_num; i++)
         {
-            DynObjFilt->point_soph_pointers[i] = new point_soph();
+            // Allocate arrays of point_soph (matching original pattern)
+            point_soph* p = new point_soph[DynObjFilt->points_num_perframe];
+            DynObjFilt->point_soph_pointers.push_back(p);
         }
+        
+        // Initialize cluster
+        DynObjFilt->Cluster.Init();
     }
 
     void OdomCallback(const nav_msgs::msg::Odometry::SharedPtr cur_odom)
