@@ -6,7 +6,7 @@ This launch file starts the dynfilter node for processing LiDAR points with odom
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, TextSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
@@ -51,7 +51,7 @@ def generate_launch_description():
         pkg_share,
         'config',
         LaunchConfiguration('dataset'),
-        [LaunchConfiguration('dataset'), LaunchConfiguration('config_file'), '.yaml']
+        [LaunchConfiguration('dataset'), LaunchConfiguration('config_file'), TextSubstitution(text='.yaml')]
     ])
     
     # Dynfilter node with odometry
