@@ -71,7 +71,10 @@ Install gcc-9 g++-9
 Follow [[TBB Installation](https://solarianprogrammer.com/2019/05/09/cpp-17-stl-parallel-algorithms-gcc-intel-tbb-linux-macos/)] (**Note:** change the gcc-9.1/g++-9.1 to gcc-9/g++-9)
 
 Change the TBB path (line 51-52) in CMakeLists.txt
+
 ## 3. Build
+
+### 3.1 Build for ROS1 (Melodic/Noetic)
 
 Clone the repository and catkin_make:
 
@@ -83,6 +86,49 @@ Clone the repository and catkin_make:
 
 `source devel/setup.bash`
 (**Note:** change the path for TBB in CMakeList.txt)
+
+### 3.2 Build for ROS2 (Jazzy / Ubuntu 24.04)
+
+**ROS2 Migration Status:** The ROS2 branch includes incremental conversion of nodes to ROS2 (Jazzy).
+
+Clone the repository and build with colcon:
+
+```bash
+cd ~/ros2_ws/src
+git clone git@github.com:roman5791/M-detector.git -b ros2/jazzy-migration
+cd ~/ros2_ws
+colcon build --packages-select m_detector
+source install/setup.bash
+```
+
+**Currently available ROS2 nodes:**
+- `dynfilter_odom` - Dynamic object filtering with odometry (converted from dynfilter_with_odom)
+
+**Run the ROS2 dynfilter_odom node:**
+
+```bash
+ros2 run m_detector dynfilter_odom --ros-args \
+  -p dyn_obj.points_topic:=/cloud_registered_body \
+  -p dyn_obj.odom_topic:=/aft_mapped_to_init \
+  -p dyn_obj.out_file:=/path/to/output/predictions/ \
+  -p dyn_obj.out_file_origin:=/path/to/output/predictions_origin/
+```
+
+**Key ROS2 parameters:**
+- `dyn_obj.points_topic` (string): Topic name for input point cloud (default: "")
+- `dyn_obj.odom_topic` (string): Topic name for odometry (default: "")
+- `dyn_obj.out_file` (string): Output path for frame-out results (default: "")
+- `dyn_obj.out_file_origin` (string): Output path for point-out results (default: "")
+- `dyn_obj.dataset` (int): Dataset type - 0 for kitti, 1 for nuscenes, 2 for waymo (default: 0)
+- Other parameters match the ROS1 configuration (see section 4.1)
+
+**Published topics (ROS2):**
+- `/m_detector/frame_out` - Dynamic objects (frame-out mode)
+- `/m_detector/point_out` - Dynamic objects (point-out mode)
+- `/m_detector/std_points` - Static/steady points
+
+**Livox driver compatibility:**
+The ROS2 version currently supports standard `sensor_msgs/msg/PointCloud2` messages. Support for Livox custom messages requires the livox_ros_driver2 package. The code includes compile-time guards (`#ifdef HAVE_LIVOX_ROS2`) for future Livox ROS2 driver integration.
 
 ## 4. Key Information
 
