@@ -109,7 +109,7 @@ private:
     void pointsCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg_in)
     {
         PointCloudXYZI::Ptr points_in(new PointCloudXYZI());
-        pcl::fromPCL(pcl_conversions::toPCL(*msg_in), *points_in);
+        pcl::fromROSMsg(*msg_in, *points_in);
 
         if(frames_ < minus_num_)
         {
