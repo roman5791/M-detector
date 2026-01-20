@@ -80,6 +80,7 @@ add_executable(dynfilter_ros2
   src/dynfilter_with_odom_ros2.cpp 
   src/DynObjFilter.cpp 
   src/DynObjCluster.cpp
+  src/DynObjFilter_ros2.cpp
 )
 ament_target_dependencies(dynfilter_ros2
   rclcpp
@@ -154,7 +155,7 @@ install(TARGETS
 
 # Install directories
 install(DIRECTORY
-  launch
+  launch_ros2
   config
   rviz
   DESTINATION share/${PROJECT_NAME}
