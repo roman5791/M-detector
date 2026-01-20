@@ -23,7 +23,6 @@
 #include <geometry_msgs/msg/vector3.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 #include <pcl/filters/random_sample.h>
-#include <unistd.h> 
 #include <dirent.h> 
 #include <iomanip>
 
@@ -65,8 +64,6 @@ public:
         } else {
             RCLCPP_WARN(this->get_logger(), "Could not open prediction folder: %s", pred_folder_.c_str());
         }
-
-        minus_num_ = 0;
 
         // Create publishers with appropriate QoS
         pub_pointcloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
@@ -121,7 +118,7 @@ private:
         }
         else
         {   
-            cout << "frame: " << frames_ << endl;
+            RCLCPP_INFO(this->get_logger(), "frame: %d", frames_);
 
             string pred_file = pred_folder_;
             stringstream sss;
@@ -232,7 +229,7 @@ private:
     {   
         PointCloudXYZI::Ptr points_in(new PointCloudXYZI());
         points_in->resize(msg_in->point_num);
-        std::cout << "points size: " << msg_in->point_num << std::endl;
+        RCLCPP_DEBUG(this->get_logger(), "points size: %u", msg_in->point_num);
         if(msg_in->point_num == 0) return;
         for(uint32_t i = 0; i < msg_in->point_num; i++)
         {
@@ -251,7 +248,7 @@ private:
         }
         else
         {   
-            cout << "frame: " << frames_ << endl;
+            RCLCPP_INFO(this->get_logger(), "frame: %d", frames_);
 
             string pred_file = pred_folder_;
             stringstream sss;
@@ -379,7 +376,7 @@ private:
     
     // State
     int frames_ = 0;
-    int minus_num_ = 1;
+    int minus_num_ = 0;
 };
 
 int main(int argc, char** argv)
