@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package>
+<package format="3">
   <name>m_detector</name>
   <version>0.0.0</version>
 
@@ -16,32 +16,62 @@
   <author email="wu2020@connect.hku.hk">HuajieWu</author>
   <author email="yhangli@connect.hku.hk">YihangLi</author>
   
+  <!-- ROS1 catkin buildtool -->
   <buildtool_depend>catkin</buildtool_depend>
+  
+  <!-- ROS2 ament_cmake buildtool -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  
+  <!-- Common dependencies for both ROS1 and ROS2 -->
   <build_depend>geometry_msgs</build_depend>
   <build_depend>nav_msgs</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>sensor_msgs</build_depend>
+  
+  <!-- ROS1 specific dependencies -->
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>pcl_ros</build_depend>
   <build_depend>livox_ros_driver</build_depend>
   <build_depend>message_generation</build_depend>
 
-  <run_depend>geometry_msgs</run_depend>
-  <run_depend>nav_msgs</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>roscpp</run_depend>
-  <run_depend>rospy</run_depend>
-  <run_depend>std_msgs</run_depend>
-  <run_depend>tf</run_depend>
-  <run_depend>pcl_ros</run_depend>
-  <run_depend>livox_ros_driver</run_depend>
-  <run_depend>message_runtime</run_depend>
+  <!-- ROS2 specific dependencies -->
+  <build_depend>rclcpp</build_depend>
+  <build_depend>tf2</build_depend>
+  <build_depend>tf2_ros</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
+  <build_depend>tf2_eigen</build_depend>
+  <build_depend>pcl_conversions</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+
+  <!-- Runtime dependencies -->
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  
+  <!-- ROS1 runtime dependencies -->
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>tf</exec_depend>
+  <exec_depend>pcl_ros</exec_depend>
+  <exec_depend>livox_ros_driver</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+  
+  <!-- ROS2 runtime dependencies -->
+  <exec_depend>rclcpp</exec_depend>
+  <exec_depend>tf2</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
+  <exec_depend>tf2_eigen</exec_depend>
+  <exec_depend>pcl_conversions</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
 
   <test_depend>rostest</test_depend>
   <test_depend>rosbag</test_depend>
 
   <export>
+    <build_type>ament_cmake</build_type>
   </export>
 </package>
