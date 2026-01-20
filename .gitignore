@@ -1,0 +1,27 @@
+# Build artifacts
+build/
+install/
+log/
+*.pyc
+__pycache__/
+
+# ROS1 build artifacts
+devel/
+.catkin_workspace
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Compiled files
+*.o
+*.so
+*.a
+*.exe
+
+# OS files
+.DS_Store
+Thumbs.db

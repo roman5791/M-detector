@@ -27,9 +27,13 @@ The codes of this repo are contributed by:
 
 ### 2.1 **Ubuntu** and **ROS**
 
-Ubuntu ≥ 18.04.
+**ROS1 (Legacy):**
+- Ubuntu ≥ 18.04
+- ROS ≥ Melodic. Follow [[ROS Installation](http://wiki.ros.org/ROS/Installation)]
 
-ROS     ≥ Melodic. Follow [[ROS Installation](http://wiki.ros.org/ROS/Installation)]
+**ROS2 (Current):**
+- Ubuntu ≥ 24.04
+- ROS2 Jazzy. Follow [[ROS2 Installation](https://docs.ros.org/en/jazzy/Installation.html)]
 
 ### 2.2 **PCL** and **Eigen**
 
@@ -43,7 +47,11 @@ Eigen    ≥ 3.3.4
 
 ### 2.3 **livox_ros_driver**
 
+**For ROS1:**
 Follow [livox_ros_driver Installation](https://github.com/Livox-SDK/livox_ros_driver).
+
+**For ROS2:**
+ROS2 Livox driver (livox_ros_driver2) support is optional. If available, the display_prediction node will support Livox CustomMsg format. Without it, the node will work with standard sensor_msgs/PointCloud2 messages.
 
 *Remarks:*
 
@@ -71,7 +79,10 @@ Install gcc-9 g++-9
 Follow [[TBB Installation](https://solarianprogrammer.com/2019/05/09/cpp-17-stl-parallel-algorithms-gcc-intel-tbb-linux-macos/)] (**Note:** change the gcc-9.1/g++-9.1 to gcc-9/g++-9)
 
 Change the TBB path (line 51-52) in CMakeLists.txt
+
 ## 3. Build
+
+### 3.1 ROS1 Build (Legacy)
 
 Clone the repository and catkin_make:
 
@@ -84,7 +95,79 @@ Clone the repository and catkin_make:
 `source devel/setup.bash`
 (**Note:** change the path for TBB in CMakeList.txt)
 
-## 4. Key Information
+### 3.2 ROS2 Build (Current - Jazzy)
+
+Clone the repository and build with colcon:
+
+```bash
+cd ~/ros2_ws/src
+git clone -b ros2/jazzy-migration git@github.com:roman5791/M-detector.git
+cd ~/ros2_ws
+colcon build --packages-select m_detector
+source install/setup.bash
+```
+
+**Note:** The ROS2 migration currently includes only the `display_prediction` node as a proof-of-concept. Additional nodes (dynfilter_odom, cal_recall_multi) will be converted in follow-up PRs.
+
+## 4. Run with ROS2 (display_prediction node)
+
+### 4.1 Running the display_prediction node
+
+The `display_prediction` node reads prediction label files and visualizes the results overlaid on point cloud data.
+
+**Basic usage:**
+```bash
+ros2 run m_detector display_prediction --ros-args \
+  -p dyn_obj.pc_topic:=/velodyne_points \
+  -p dyn_obj.pred_file:=/path/to/predictions/ \
+  -p dyn_obj.frame_id:=camera_init
+```
+
+### 4.2 Parameters
+
+- `dyn_obj.pc_topic` (string, default: "/velodyne_points"): Input point cloud topic
+- `dyn_obj.pred_file` (string): Path to folder containing .label prediction files (format: XXXXXX.label)
+- `dyn_obj.pc_file` (string): Path to point cloud files (optional, for file-based playback)
+- `dyn_obj.frame_id` (string, default: "camera_init"): TF frame ID for published messages
+
+### 4.3 Published Topics
+
+- `/m_detector/result_view` (sensor_msgs/PointCloud2): Colored point cloud showing dynamic/static classification
+- `/m_detector/iou_view` (sensor_msgs/PointCloud2): IoU visualization point cloud
+- `/m_detector/dyn_points` (sensor_msgs/PointCloud2): Dynamic points only
+- `/m_detector/std_points` (sensor_msgs/PointCloud2): Static points only
+- `/m_detector/text_view` (visualization_msgs/Marker): Text marker showing statistics
+
+### 4.4 Subscribed Topics
+
+- Configured via `dyn_obj.pc_topic` parameter (sensor_msgs/PointCloud2): Input point cloud
+
+### 4.5 Example Usage
+
+```bash
+# Terminal 1: Run the display_prediction node
+ros2 run m_detector display_prediction --ros-args \
+  -p dyn_obj.pc_topic:=/velodyne_points \
+  -p dyn_obj.pred_file:=/home/user/datasets/kitti/sequences/0000/predictions1/ \
+  -p dyn_obj.frame_id:=camera_init
+
+# Terminal 2: Play a bag file or publish point clouds
+ros2 bag play your_pointcloud.bag
+```
+
+### 4.6 Visualizing with RViz2
+
+```bash
+ros2 run rviz2 rviz2
+```
+
+Add the following topics in RViz2:
+- `/m_detector/result_view` - to see the classified points
+- `/m_detector/dyn_points` - to see dynamic points only
+- `/m_detector/std_points` - to see static points only
+- `/m_detector/text_view` - to see statistics
+
+## 5. Key Information (ROS1 - Legacy)
 
 ### 4.1 Key parameters
 
