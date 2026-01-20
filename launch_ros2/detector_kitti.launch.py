@@ -1,122 +1,70 @@
-"""ROS2 launch file for M-Detector KITTI dataset."""
-
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.conditions import IfCondition
+from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.conditions import IfCondition
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
-from ament_index_python.packages import get_package_share_directory
-import os
-
 
 def generate_launch_description():
-    """Generate launch description for M-Detector with KITTI dataset."""
-    
-    # Declare launch arguments
-    rviz_arg = DeclareLaunchArgument(
-        'rviz',
-        default_value='true',
-        description='Launch RViz visualization'
-    )
-    
-    time_file_arg = DeclareLaunchArgument(
-        'time_file',
-        default_value='',
-        description='Time file path'
-    )
-    
-    out_path_arg = DeclareLaunchArgument(
-        'out_path',
-        default_value='',
-        description='Output path for results'
-    )
-    
-    out_origin_path_arg = DeclareLaunchArgument(
-        'out_origin_path',
-        default_value='',
-        description='Output path for origin results'
-    )
-    
-    pose_log_arg = DeclareLaunchArgument(
-        'pose_log',
-        default_value='false',
-        description='Enable pose logging'
-    )
-    
-    pose_log_file_arg = DeclareLaunchArgument(
-        'pose_log_file',
-        default_value='',
-        description='Pose log file path'
-    )
-    
-    cluster_out_file_arg = DeclareLaunchArgument(
-        'cluster_out_file',
-        default_value='',
-        description='Cluster output file path'
-    )
-    
-    time_breakdown_file_arg = DeclareLaunchArgument(
-        'time_breakdown_file',
-        default_value='',
-        description='Time breakdown file path'
-    )
-    
-    # Get package share directory
-    pkg_share = FindPackageShare('m_detector')
-    
-    # Config file path
-    config_file = PathJoinSubstitution([
-        pkg_share,
-        'config',
-        'kitti',
-        'kitti1.yaml'
-    ])
-    
-    # DynFilter node
-    dynfilter_node = Node(
-        package='m_detector',
-        executable='dynfilter_ros2',
-        name='dynfilter',
-        output='screen',
-        parameters=[
-            config_file,
-            {
-                'dyn_obj.out_file': LaunchConfiguration('out_path'),
-                'dyn_obj.out_file_origin': LaunchConfiguration('out_origin_path'),
-                'dyn_obj.time_file': LaunchConfiguration('time_file'),
-                'dyn_obj.pose_log': LaunchConfiguration('pose_log'),
-                'dyn_obj.pose_log_file': LaunchConfiguration('pose_log_file'),
-                'dyn_obj.cluster_out_file': LaunchConfiguration('cluster_out_file'),
-                'dyn_obj.time_breakdown_file': LaunchConfiguration('time_breakdown_file'),
-            }
-        ]
-    )
-    
-    # RViz node
-    rviz_config = PathJoinSubstitution([
-        pkg_share,
-        'rviz',
-        'demo.rviz'
-    ])
-    
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz',
-        arguments=['-d', rviz_config],
-        condition=IfCondition(LaunchConfiguration('rviz'))
-    )
-    
+    # Launch args (mirror ROS1 defaults)
+    rviz = LaunchConfiguration('rviz', default='true')
+    time_file = LaunchConfiguration('time_file', default='')
+    out_path = LaunchConfiguration('out_path', default='')
+    out_origin_path = LaunchConfiguration('out_origin_path', default='')
+    pose_log = LaunchConfiguration('pose_log', default='false')
+    pose_log_file = LaunchConfiguration('pose_log_file', default='')
+    cluster_out_file = LaunchConfiguration('cluster_out_file', default='')
+    time_breakdown_file = LaunchConfiguration('time_breakdown_file', default='')
+    prefix = LaunchConfiguration('prefix', default='')  # optional launch prefix (e.g. "gdb -ex run --args")
+
+    # config YAML and rviz paths in package share
+    kitti_config = PathJoinSubstitution([FindPackageShare('m_detector'), 'config', 'kitti', 'kitti1.yaml'])
+    rviz_config = PathJoinSubstitution([FindPackageShare('m_detector'), 'rviz', 'demo.rviz'])
+
     return LaunchDescription([
-        rviz_arg,
-        time_file_arg,
-        out_path_arg,
-        out_origin_path_arg,
-        pose_log_arg,
-        pose_log_file_arg,
-        cluster_out_file_arg,
-        time_breakdown_file_arg,
-        dynfilter_node,
-        rviz_node,
+        DeclareLaunchArgument('rviz', default_value='true', description='Launch rviz2 if true'),
+        DeclareLaunchArgument('time_file', default_value=''),
+        DeclareLaunchArgument('out_path', default_value=''),
+        DeclareLaunchArgument('out_origin_path', default_value=''),
+        DeclareLaunchArgument('pose_log', default_value='false'),
+        DeclareLaunchArgument('pose_log_file', default_value=''),
+        DeclareLaunchArgument('cluster_out_file', default_value=''),
+        DeclareLaunchArgument('time_breakdown_file', default_value=''),
+        DeclareLaunchArgument('prefix', default_value='', description='Optional command prefix'),
+
+        # dynfilter node (mapped to ROS2 executable dynfilter_odom; keep node name 'dynfilter' for compatibility)
+        Node(
+            package='m_detector',
+            executable='dynfilter_odom',
+            name='dynfilter',
+            output='screen',
+            prefix=prefix,
+            parameters=[
+                # load YAML first, then overrides
+                kitti_config,
+                {
+                    'dyn_obj.out_file': out_path,
+                    'dyn_obj.out_file_origin': out_origin_path,
+                    'dyn_obj.time_file': time_file,
+                    'dyn_obj.pose_log': pose_log,
+                    'dyn_obj.pose_log_file': pose_log_file,
+                    'dyn_obj.cluster_out_file': cluster_out_file,
+                    'dyn_obj.time_breakdown_file': time_breakdown_file
+                }
+            ]
+        ),
+
+        # optional RViz2 (only launched when rviz arg is true)
+        Node(
+            condition=IfCondition(rviz),
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2',
+            output='screen',
+            prefix='nice',
+            arguments=[
+                '-d',
+                rviz_config
+            ]
+        )
     ])
