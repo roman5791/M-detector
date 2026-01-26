@@ -1,5 +1,17 @@
 # M-detector
 
+## 🎉 ROS2 Jazzy Support Now Available!
+
+This package now supports **both ROS1 (Melodic)** and **ROS2 (Jazzy)** on the `jazzy_migration_ros2` branch!
+
+- 📦 **Non-destructive migration**: All original ROS1 files remain intact
+- 🔄 **Easy switching**: Simple file swap to build for ROS1 or ROS2
+- 📚 **Full documentation**: See [ROS2_MIGRATION.md](ROS2_MIGRATION.md) and [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md)
+
+For **ROS2 Jazzy (Ubuntu 24.04)** users, switch to the `jazzy_migration_ros2` branch and follow the [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md).
+
+---
+
 ## 1.Introduction
 
 **M-detector** is a moving event detection package, which determines if a point from LiDAR is moving immediately after its arrival, resulting in a point-by-point detection with a latency of just several microseconds. M-detector is designed based on occlusion principles and can be used in different environments with various types of LiDAR sensors.
